@@ -172,13 +172,13 @@ class DeepVoxels(nn.Module):
             # Testing mode: Use the pre-trained deepvoxels volume.
             dv_new = self.deepvoxels
 
-        inpainting_input = torch.cat([dv_new, self.coord_conv_volume], dim=1)
-        dv_inpainted = self.inpainting_net(inpainting_input)
+        # inpainting_input = torch.cat([dv_new, self.coord_conv_volume], dim=1)
+        # dv_inpainted = self.inpainting_net(inpainting_input)
 
         novel_views, depth_maps = list(), list()
 
         for i, (proj_frustrum_idcs, proj_grid_coords) in enumerate(zip(proj_frustrum_idcs_list, proj_grid_coords_list)):
-            can_view_vol = interpolate_trilinear(dv_inpainted,
+            can_view_vol = interpolate_trilinear(dv_new, # dv_inpainted,
                                                  proj_frustrum_idcs,
                                                  proj_grid_coords,
                                                  self.frustrum_img_dims,
