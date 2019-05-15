@@ -155,7 +155,7 @@ class DeepVoxels(nn.Module):
         self.coord_conv_volume = torch.Tensor(coord_conv_volume).float().cuda()[None, :, :, :, :]
 
     def forward(self,
-                input_img,
+                input_img, image_dir,
                 proj_frustrum_idcs_list,
                 proj_grid_coords_list,
                 lift_volume_idcs,
@@ -166,6 +166,7 @@ class DeepVoxels(nn.Module):
             img_feats = self.feature_extractor(input_img)
             temp_feat_vol = interpolate_lifting(img_feats, lift_volume_idcs, lift_img_coords, self.grid_dims)
 
+            #TODO swap deepvoxels.data using image_dir
             dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)
             self.deepvoxels.data = dv_new
         else:

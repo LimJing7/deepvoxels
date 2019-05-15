@@ -175,7 +175,7 @@ def train():
 
     print('Begin training...')
     for epoch in range(opt.start_epoch, opt.max_epoch):
-        for trgt_views, nearest_view in dataloader:
+        for trgt_views, nearest_view, image_dir in dataloader:
             backproj_mapping = projection.comp_lifting_idcs(camera_to_world=nearest_view['pose'].squeeze().to(device),
                                                             grid2world=grid_origin)
 
@@ -196,7 +196,7 @@ def train():
 
             proj_frustrum_idcs, proj_grid_coords = list(zip(*proj_mappings))
 
-            outputs, depth_maps = model(nearest_view['gt_rgb'].to(device),
+            outputs, depth_maps = model(nearest_view['gt_rgb'].to(device), image_dir,
                                         proj_frustrum_idcs, proj_grid_coords,
                                         lift_volume_idcs, lift_img_coords,
                                         writer=writer)
