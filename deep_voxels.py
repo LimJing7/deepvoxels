@@ -115,11 +115,13 @@ class DeepVoxels(nn.Module):
             )
             print(self.frustrum_collapse_net)
 
-        # The deepvoxels grid is registered as a buffer - meaning, it is safed together with model parameters, but is
+        # The deepvoxels grid is registered as a buffer - meaning, it is saved together with model parameters, but is
         # not trainable.
         self.register_buffer("deepvoxels",
                              torch.zeros(
                                  (1, self.n_grid_feats, self.grid_dims[0], self.grid_dims[1], self.grid_dims[2])))
+        # to keep track of current deep voxel
+        self.curr_image_dir = None
 
         self.integration_net = IntegrationNet(self.n_grid_feats,
                                               use_dropout=True,
@@ -166,9 +168,15 @@ class DeepVoxels(nn.Module):
             img_feats = self.feature_extractor(input_img)
             temp_feat_vol = interpolate_lifting(img_feats, lift_volume_idcs, lift_img_coords, self.grid_dims)
 
-            #TODO swap deepvoxels.data using image_dir
-            dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)
-            self.deepvoxels.data = dv_new
+            if (self.curr_image_dir == image_dir):
+                dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)
+                self.deepvoxels.data = dv_new
+            else:
+                torch.save(self.deepvoxels.data, f'{self.curr_image_dir}_deepvoxels.pt')
+                dv_old = torch.load(f'{image_dir}_deepvoxels.pt')
+                dv_new = self.integration_net(temp_feat_vol, dv_old, writer)
+                self.deepvoxels.data = dv_new
+
         else:
             # Testing mode: Use the pre-trained deepvoxels volume.
             dv_new = self.deepvoxels
