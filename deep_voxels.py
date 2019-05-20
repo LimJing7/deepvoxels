@@ -172,14 +172,20 @@ class DeepVoxels(nn.Module):
                 dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)
                 self.deepvoxels.data = dv_new
             else:
-                torch.save(self.deepvoxels.data, f'{self.curr_image_dir}_deepvoxels.pt')
-                dv_old = torch.load(f'{image_dir}_deepvoxels.pt')
+                if (self.curr_image_dir is not None): 
+                    torch.save(self.deepvoxels.data, f'{self.curr_image_dir}_deepvoxels.pt')
+                try:
+                    dv_old = torch.load(f'{image_dir}_deepvoxels.pt')
+                except FileNotFoundError:
+                    dv_old = torch.zeros(
+                                 (1, self.n_grid_feats, self.grid_dims[0], self.grid_dims[1], self.grid_dims[2]))
                 dv_new = self.integration_net(temp_feat_vol, dv_old, writer)
                 self.deepvoxels.data = dv_new
 
         else:
             # Testing mode: Use the pre-trained deepvoxels volume.
-            dv_new = self.deepvoxels
+            dv_new = torch.load(f'{image_dir}_deepvoxels.pt')
+            # dv_new = self.deepvoxels
 
         inpainting_input = torch.cat([dv_new, self.coord_conv_volume], dim=1)
         dv_inpainted = self.inpainting_net(inpainting_input)

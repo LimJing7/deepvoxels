@@ -80,7 +80,7 @@ voxel_size = (1. / opt.grid_dim) * 1.1 * scale
 grid_origin = torch.tensor(np.eye(4)).float().to(device).squeeze()
 grid_origin[:3,3] = grid_barycenter
 
-# Minimum and maximum depth used for rejecting voxels outside of the cmaera frustrum
+# Minimum and maximum depth used for rejecting voxels outside of the camera frustrum
 depth_min = 0.
 depth_max = opt.grid_dim * voxel_size + opt.near_plane
 grid_dims = 3 * [opt.grid_dim]
