@@ -31,12 +31,12 @@ class NovelViewTriplets():
             self.color_dir[image_dir] = os.path.join(image_dir, 'rgb')
             self.pose_dir[image_dir] = os.path.join(image_dir, 'pose')
 
-            if not os.path.isdir(self.color_dir):
+            if not os.path.isdir(self.color_dir[image_dir]):
                 print("Error! root dir is wrong")
                 return
 
-            self.all_color[image_dir] = sorted(data_util.glob_imgs(self.color_dir))
-            self.all_poses[image_dir] = sorted(glob(os.path.join(self.pose_dir, '*.txt')))
+            self.all_color[image_dir] = sorted(data_util.glob_imgs(self.color_dir[image_dir]))
+            self.all_poses[image_dir] = sorted(glob(os.path.join(self.pose_dir[image_dir], '*.txt')))
 
             # Subsample the trajectory for training / test set split as well as the result matrix
             file_lists = [self.all_color[image_dir], self.all_poses[image_dir]]
@@ -63,6 +63,7 @@ class NovelViewTriplets():
                 self.all_views[image_dir].append(self.read_view_tuple(image_dir, i))
 
             # Calculate the ranking of nearest neigbors
+            # print(len(data_util.get_nn_ranking([data_util.load_pose(pose) for pose in self.all_poses[image_dir]])[0]))
             self.nn_idcs[image_dir], _ = data_util.get_nn_ranking([data_util.load_pose(pose) for pose in self.all_poses[image_dir]])
 
         print("*" * 100)
@@ -110,11 +111,11 @@ class NovelViewTriplets():
         # Read one target pose and its nearest neighbor
         image_dir, iidx = self.idx2imgdir(idx)
         trgt_views.append(self.all_views[image_dir][iidx])
-        nearest_view = self.all_views[self.nn_idcs[image_dir][iidx][-np.random.randint(low=1, high=5)]]
+        nearest_view = self.all_views[image_dir][self.nn_idcs[image_dir][iidx][-np.random.randint(low=1, high=5)]]
 
         # The second target pose is a random one
-        image_dir = np.random.choice(self.all_views)
-        trgt_views.append(self.all_views[image_dir][np.random.choice(len(image_dir))])
+        image_dir = np.random.choice(list(self.all_views.keys()))
+        trgt_views.append(self.all_views[image_dir][np.random.choice(len(self.all_views[image_dir]))])
 
         return trgt_views, nearest_view, image_dir
 

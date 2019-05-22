@@ -178,7 +178,7 @@ class DeepVoxels(nn.Module):
                     dv_old = torch.load(f'{image_dir}_deepvoxels.pt')
                 except FileNotFoundError:
                     dv_old = torch.zeros(
-                                 (1, self.n_grid_feats, self.grid_dims[0], self.grid_dims[1], self.grid_dims[2]))
+                                 (1, self.n_grid_feats, self.grid_dims[0], self.grid_dims[1], self.grid_dims[2])).cuda()
                 dv_new = self.integration_net(temp_feat_vol, dv_old, writer)
                 self.deepvoxels.data = dv_new
 
