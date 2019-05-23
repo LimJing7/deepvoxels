@@ -99,7 +99,7 @@ class NovelViewTriplets():
         if img_dir_idx == 0:
             return self.images_dir[img_dir_idx], idx
         else:
-            return self.images_dir[img_dir_idx], idx - self.images_dir[img_dir_idx-1]
+            return self.images_dir[img_dir_idx], idx - self.sizes[img_dir_idx-1]
 
     def __len__(self):
         a = [len(self.all_color[i]) for i in self.all_color]

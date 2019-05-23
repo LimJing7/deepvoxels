@@ -163,28 +163,35 @@ class DeepVoxels(nn.Module):
                 lift_volume_idcs,
                 lift_img_coords,
                 writer):
+
+        curr_image_dir = image_dir[0].split('/')[-1]
+
         if input_img is not None:
             # Training mode: Extract features from input img, lift them, and update the deepvoxels volume.
             img_feats = self.feature_extractor(input_img)
             temp_feat_vol = interpolate_lifting(img_feats, lift_volume_idcs, lift_img_coords, self.grid_dims)
 
-            if (self.curr_image_dir == image_dir):
+            if (self.curr_image_dir == curr_image_dir):
                 dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)
                 self.deepvoxels.data = dv_new
             else:
                 if (self.curr_image_dir is not None): 
                     torch.save(self.deepvoxels.data, f'{self.curr_image_dir}_deepvoxels.pt')
+                    print(f'saved to: {self.curr_image_dir}_deepvoxels.pt')
                 try:
-                    dv_old = torch.load(f'{image_dir}_deepvoxels.pt')
+                    dv_old = torch.load(f'{curr_image_dir}_deepvoxels.pt')
+                    print(f'loaded from: {curr_image_dir}_deepvoxels.pt')
                 except FileNotFoundError:
                     dv_old = torch.zeros(
                                  (1, self.n_grid_feats, self.grid_dims[0], self.grid_dims[1], self.grid_dims[2])).cuda()
                 dv_new = self.integration_net(temp_feat_vol, dv_old, writer)
                 self.deepvoxels.data = dv_new
+                self.curr_image_dir = curr_image_dir
 
         else:
             # Testing mode: Use the pre-trained deepvoxels volume.
-            dv_new = torch.load(f'{image_dir}_deepvoxels.pt')
+            dv_new = torch.load(f'{curr_image_dir}_deepvoxels.pt')
+            print(f'loaded from: {curr_image_dir}_deepvoxels.pt')
             # dv_new = self.deepvoxels
 
         inpainting_input = torch.cat([dv_new, self.coord_conv_volume], dim=1)
