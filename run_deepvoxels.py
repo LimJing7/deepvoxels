@@ -80,7 +80,7 @@ voxel_size = (1. / opt.grid_dim) * 1.1 * scale
 grid_origin = torch.tensor(np.eye(4)).float().to(device).squeeze()
 grid_origin[:3,3] = grid_barycenter
 
-# Minimum and maximum depth used for rejecting voxels outside of the cmaera frustrum
+# Minimum and maximum depth used for rejecting voxels outside of the camera frustrum
 depth_min = 0.
 depth_max = opt.grid_dim * voxel_size + opt.near_plane
 grid_dims = 3 * [opt.grid_dim]
@@ -175,7 +175,7 @@ def train():
 
     print('Begin training...')
     for epoch in range(opt.start_epoch, opt.max_epoch):
-        for trgt_views, nearest_view in dataloader:
+        for trgt_views, nearest_view, image_dir in dataloader:
             backproj_mapping = projection.comp_lifting_idcs(camera_to_world=nearest_view['pose'].squeeze().to(device),
                                                             grid2world=grid_origin)
 
@@ -196,7 +196,7 @@ def train():
 
             proj_frustrum_idcs, proj_grid_coords = list(zip(*proj_mappings))
 
-            outputs, depth_maps = model(nearest_view['gt_rgb'].to(device),
+            outputs, depth_maps = model(nearest_view['gt_rgb'].to(device), image_dir,
                                         proj_frustrum_idcs, proj_grid_coords,
                                         lift_volume_idcs, lift_img_coords,
                                         writer=writer)
@@ -294,7 +294,7 @@ def train():
 
             iter += 1
 
-            if iter % 10000 == 0:
+            if iter % 5000 == 0:
                 util.custom_save(model,
                                  os.path.join(log_dir, 'model-epoch_%d_iter_%s.pth' % (epoch, iter)),
                                  discriminator)
@@ -306,7 +306,10 @@ def train():
 
 def test():
     # Create the training dataset loader
-    dataset = TestDataset(pose_dir=os.path.join(opt.data_root, 'pose'))
+    images_dir = [os.path.join(opt.data_root, o) for o in os.listdir(opt.data_root) 
+                if os.path.isdir(os.path.join(opt.data_root, o))]
+    image_dir = images_dir[0]
+    dataset = TestDataset(pose_dir=os.path.join(image_dir, 'pose'))
 
     util.custom_load(model, opt.checkpoint)
     model.eval()
@@ -343,7 +346,7 @@ def test():
             proj_ind_3d, proj_ind_2d = proj_mapping
 
             # Run through model
-            output, depth_maps, = model(None,
+            output, depth_maps, = model(None, (image_dir,),
                                         [proj_ind_3d], [proj_ind_2d],
                                         None, None,
                                         None)

@@ -265,6 +265,8 @@ def custom_load(model, path, discriminator=None):
 
 def custom_save(model, path, discriminator=None):
     whole_dict = {'model': model.state_dict()}
+    model.save_voxelgrid()
+    print(f'saving voxel_grid')
     if discriminator:
         whole_dict.update({'discriminator': discriminator.state_dict()})
 

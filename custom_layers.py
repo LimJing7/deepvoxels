@@ -1,4 +1,4 @@
- import torch
+import torch
 import torch.nn as nn
 import numpy as np
 from torch.nn.modules.utils import _ntuple
@@ -33,18 +33,10 @@ class IntegrationNet(torch.nn.Module):
         self.new_integration = nn.Sequential(
             nn.ReplicationPad3d(1),
             nn.Conv3d(in_channels, nf0, kernel_size=3, padding=0, bias=True),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, nf0, kernel_size=3, padding=0, bias=True),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, nf0, kernel_size=3, padding=0, bias=True),
             nn.Dropout2d(0.2)
         )
 
         self.old_integration = nn.Sequential(
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, nf0, kernel_size=3, padding=0, bias=False),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, nf0, kernel_size=3, padding=0, bias=False),
             nn.ReplicationPad3d(1),
             nn.Conv3d(in_channels, nf0, kernel_size=3, padding=0, bias=False),
             nn.Dropout2d(0.2)
@@ -53,16 +45,8 @@ class IntegrationNet(torch.nn.Module):
         self.update_old_net = nn.Sequential(
             nn.ReplicationPad3d(1),
             nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=True),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=True),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=True),
         )
         self.update_new_net = nn.Sequential(
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=False),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=False),
             nn.ReplicationPad3d(1),
             nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=False),
         )
@@ -70,16 +54,8 @@ class IntegrationNet(torch.nn.Module):
         self.reset_old_net = nn.Sequential(
             nn.ReplicationPad3d(1),
             nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=True),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=True),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=True),
         )
         self.reset_new_net = nn.Sequential(
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=False),
-            nn.ReplicationPad3d(1),
-            nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=False),
             nn.ReplicationPad3d(1),
             nn.Conv3d(in_channels, weights_channels, kernel_size=3, padding=0, bias=False),
         )

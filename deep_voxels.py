@@ -115,11 +115,13 @@ class DeepVoxels(nn.Module):
             )
             print(self.frustrum_collapse_net)
 
-        # The deepvoxels grid is registered as a buffer - meaning, it is safed together with model parameters, but is
+        # The deepvoxels grid is registered as a buffer - meaning, it is saved together with model parameters, but is
         # not trainable.
         self.register_buffer("deepvoxels",
                              torch.zeros(
                                  (1, self.n_grid_feats, self.grid_dims[0], self.grid_dims[1], self.grid_dims[2])))
+        # to keep track of current deep voxel
+        self.curr_image_dir = None
 
         self.integration_net = IntegrationNet(self.n_grid_feats,
                                               use_dropout=True,
@@ -154,31 +156,57 @@ class DeepVoxels(nn.Module):
         coord_conv_volume = coord_conv_volume / self.grid_dims[0]
         self.coord_conv_volume = torch.Tensor(coord_conv_volume).float().cuda()[None, :, :, :, :]
 
+    def save_voxelgrid(self):
+        if (self.curr_image_dir is not None): 
+            torch.save(self.deepvoxels.data, f'{self.curr_image_dir}_deepvoxels.pt')
+            print(f'saved to: {self.curr_image_dir}_deepvoxels.pt')
+
+
     def forward(self,
-                input_img,
+                input_img, image_dir,
                 proj_frustrum_idcs_list,
                 proj_grid_coords_list,
                 lift_volume_idcs,
                 lift_img_coords,
                 writer):
+
+        curr_image_dir = image_dir[0].split('/')[-1]
+
         if input_img is not None:
             # Training mode: Extract features from input img, lift them, and update the deepvoxels volume.
             img_feats = self.feature_extractor(input_img)
             temp_feat_vol = interpolate_lifting(img_feats, lift_volume_idcs, lift_img_coords, self.grid_dims)
 
-            dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)
-            self.deepvoxels.data = dv_new
+            if (self.curr_image_dir == curr_image_dir):
+                dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)
+                self.deepvoxels.data = dv_new
+            else:
+                if (self.curr_image_dir is not None): 
+                    torch.save(self.deepvoxels.data, f'{self.curr_image_dir}_deepvoxels.pt')
+                    print(f'saved to: {self.curr_image_dir}_deepvoxels.pt')
+                try:
+                    dv_old = torch.load(f'{curr_image_dir}_deepvoxels.pt')
+                    print(f'loaded from: {curr_image_dir}_deepvoxels.pt')
+                except FileNotFoundError:
+                    dv_old = torch.zeros(
+                                 (1, self.n_grid_feats, self.grid_dims[0], self.grid_dims[1], self.grid_dims[2])).cuda()
+                dv_new = self.integration_net(temp_feat_vol, dv_old, writer)
+                self.deepvoxels.data = dv_new
+                self.curr_image_dir = curr_image_dir
+
         else:
             # Testing mode: Use the pre-trained deepvoxels volume.
-            dv_new = self.deepvoxels
+            dv_new = torch.load(f'{curr_image_dir}_deepvoxels.pt')
+            print(f'loaded from: {curr_image_dir}_deepvoxels.pt')
+            # dv_new = self.deepvoxels
 
-        # inpainting_input = torch.cat([dv_new, self.coord_conv_volume], dim=1)
-        # dv_inpainted = self.inpainting_net(inpainting_input)
+        inpainting_input = torch.cat([dv_new, self.coord_conv_volume], dim=1)
+        dv_inpainted = self.inpainting_net(inpainting_input)
 
         novel_views, depth_maps = list(), list()
 
         for i, (proj_frustrum_idcs, proj_grid_coords) in enumerate(zip(proj_frustrum_idcs_list, proj_grid_coords_list)):
-            can_view_vol = interpolate_trilinear(dv_new, # dv_inpainted,
+            can_view_vol = interpolate_trilinear(dv_inpainted,
                                                  proj_frustrum_idcs,
                                                  proj_grid_coords,
                                                  self.frustrum_img_dims,
